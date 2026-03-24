@@ -1,20 +1,16 @@
 class PID:
-    def __init__(self,Kp, Ki=0, Kd=0):
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
-        self.sum = 0
+    def __init__(self, r0, T, Ti, Td):
+        self.q0 = -r0 * (1 + T / (2 * Ti) + Td / T)
+        self.q1 = r0 * (1 - T / (2 * Ti) + 2 * Td / T)
+        self.q2 = -r0 * Td / T
         self.prev = 0
+        self.prev_prev = 0
+        self.prev_u = 0
 
-    def regulate(self, error, dt):
-        self.sum += error * dt
-        P = error * self.Kp
-        I = self.sum * self.Ki
-        D = (error - self.prev) / dt * self.Kd
-        res = P + I + D
-        self.prev = error
+    def regulate(self, cur, ref):
+        res = self.prev_u - (self.q0 + self.q1 + self.q2) * ref + \
+            self.q0 * cur + self.q1 * self.prev + self.q2 * self.prev_prev
+        self.prev_prev = self.prev
+        self.prev = cur
+        self.prev_u = res
         return res
-
-    def reset(self):
-        self.sum = 0
-        self.prev = 0
