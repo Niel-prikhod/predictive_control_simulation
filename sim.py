@@ -32,7 +32,7 @@ def plot_responce(t, t_open, ref, open_loop, close_loop):
 
     ax2.plot(t, ref, 'k--', label="reference")
     ax2.plot(t, close_loop, label="output")
-    ax2.set_title("Closed-Loop PID Response")
+    ax2.set_title("Closed-Loop Response")
     ax2.set_xlabel("Time [s]")
     ax2.set_ylabel("y(t)")
     ax2.legend()
