@@ -27,14 +27,6 @@ def place_sylvester(A, B, desired_poles):
             Lambda[i, i] = desired_poles[i]
             i += 1
     G_bar = np.ones((m, n))
-
-    print("A shape:", A.shape)
-    print("B shape:", B.shape)
-    print("Lambda shape:", Lambda.shape)
-    print("G_bar shape:", G_bar.shape)
-    Q = -B @ G_bar
-    print("Q shape:", Q.shape)
-
     X = solve_sylvester(A, -Lambda, -B @ G_bar)
     if np.linalg.cond(X) > 1e10:
         print("Warning: X is ill-conditioned, try different G_bar")
