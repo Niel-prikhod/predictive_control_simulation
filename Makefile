@@ -10,8 +10,8 @@ MAIN		= main.py
 install_req: activate
 	$(PIP) install $(REQ)
 
-activate: 
-	source $(VENV_DIR)/bin/activate
-
 run-pid:
 	$(PY) $(MAIN) "pid"
+
+run-pole:
+	$(PY) $(MAIN) "pole"
