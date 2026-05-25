@@ -7,23 +7,15 @@ from ppc import PolePlacementRegulator
 
 
 def argument_parser():
+    """Parse CLI controller choice."""
     parser = argparse.ArgumentParser()
     parser.add_argument("controller", choices=["pid", "pole", "mpc"])
     args = parser.parse_args()
     return args
 
 
-# def pole_constructor(controller, observer, dt):
-#     s_controller = np.array(
-#         [controller - controller * 1j, controller + controller * 1j])
-#     contr_poles = np.exp(s_controller * dt)
-#     s_observer = np.array(
-#         [observer - observer * 1j, observer + observer * 1j])
-#     obs_poles = np.exp(s_observer * dt)
-#     return contr_poles, obs_poles
-
-
 def main():
+    """Build plant, run simulation, plot results."""
     args = argument_parser()
     dt = 1
     t = np.linspace(0, 100, 101)

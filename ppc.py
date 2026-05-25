@@ -27,6 +27,7 @@ class PolePlacementRegulator:
         self.y_prev = np.zeros(len(self.Q_poly) - 1)
 
     def _solve_dioph_eq(self, A_poly, B_poly, D_poly, n):
+        """Solve A(z)P(z) + B(z)Q(z) = D(z) via least-squares."""
         A_coeff = np.array(A_poly)
         B_coeff = np.array(B_poly)
         matrix = np.zeros((2 * n, 2 * n - 1))

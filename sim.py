@@ -4,6 +4,7 @@ from scipy import signal
 
 
 def simulate_plant(plant_cont, regulator, reference, t):
+    """Discretise plant and run closed-loop simulation."""
     plant_discrete = signal.cont2discrete(
         (plant_cont.num, plant_cont.den), t[1] - t[0], method='zoh'
     )
@@ -21,6 +22,7 @@ def simulate_plant(plant_cont, regulator, reference, t):
 
 
 def plot_responce(t, t_open, ref, open_loop, close_loop):
+    """Plot open-loop and closed-loop step responses side-by-side."""
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
 
     ax1.plot(t_open, ref, 'k--', label="reference")
