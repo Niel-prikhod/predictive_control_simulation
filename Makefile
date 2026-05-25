@@ -1,17 +1,29 @@
 NAME		= predictive_control
-VENV_DIR	= .venv/
+VENV		= .venv/
 
-PY			= python
-PIP			= pip
+PYTHON_SYS	= python3
+PIP			= $(VENV)/bin/pip
 REQ			= requirements.txt
+PY			= $(VENV)/bin/python
 
 MAIN		= main.py
 
-install_req: activate
-	$(PIP) install $(REQ)
+$(VENV)/bin/activate: $(REQ)
+	$(PYTHON_SYS) -m venv $(VENV)
+	$(PIP) install -r $(REQ)
+	@touch $(VENV)/bin/activate
 
-run-pid:
+venv: $(VENV)/bin/activate
+
+install: venv
+
+run-pid: venv
 	$(PY) $(MAIN) "pid"
 
-run-pole:
+run-pole: venv
 	$(PY) $(MAIN) "pole"
+
+clean:
+	rm -rf $(VENV)
+	find . -name "__pycache__" -exec rm -rf {} + 
+	find . -name "*.pyc" -exec rm -rf {} + 
