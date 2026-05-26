@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 
 def simulate_plant(num_discrete, den_discrete, regulator, reference, t):
@@ -14,24 +15,25 @@ def simulate_plant(num_discrete, den_discrete, regulator, reference, t):
     return out
 
 
-def plot_responce(t, t_open, ref, open_loop, close_loop):
+def plot_responce(t, out, ref, save, controller, out_folder):
     """Plot open-loop and closed-loop step responses side-by-side."""
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+    filename = f"{controller}_response.png"
+    filepath = os.path.join(out_folder, filename)
+    if controller != "null":
+        title = f"{controller.upper()} Regulation Response"
+    else:
+        title = "Open-loop Responce"
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot(t, ref, 'k--', label="reference")
+    ax.plot(t, out, label="output")
+    ax.set_title(title)
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("y(t)")
+    ax.legend()
+    ax.grid(True)
 
-    ax1.plot(t_open, ref, 'k--', label="reference")
-    ax1.plot(t_open, open_loop, label="output")
-    ax1.set_title("Open-Loop Step Response")
-    ax1.set_xlabel("Time [s]")
-    ax1.set_ylabel("y(t)")
-    ax1.grid(True)
-
-    ax2.plot(t, ref, 'k--', label="reference")
-    ax2.plot(t, close_loop, label="output")
-    ax2.set_title("Closed-Loop Response")
-    ax2.set_xlabel("Time [s]")
-    ax2.set_ylabel("y(t)")
-    ax2.legend()
-    ax2.grid(True)
-
-    plt.tight_layout()
-    plt.show()
+    if save == 1:
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
