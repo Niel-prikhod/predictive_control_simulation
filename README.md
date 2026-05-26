@@ -21,9 +21,9 @@ Velocity (incremental) form of a discrete PID:
 
 $$
 \begin{aligned}
-q_0 &= -r_0 \left(1 + \frac{T}{2T_i} + \frac{T_d}{T}\right) \\[2pt]
-q_1 &= r_0 \left(1 - \frac{T}{2T_i} + 2\frac{T_d}{T}\right) \\[2pt]
-q_2 &= -r_0 \frac{T_d}{T} \\[4pt]
+q_0 &= -r_0 \left(1 + \frac{T}{2T_i} + \frac{T_d}{T}\right) \\
+q_1 &= r_0 \left(1 - \frac{T}{2T_i} + 2\frac{T_d}{T}\right) \\
+q_2 &= -r_0 \frac{T_d}{T} \\
 u_k &= u_{k-1} - (q_0+q_1+q_2)\, r_k + q_0\, y_k + q_1\, y_{k-1} + q_2\, y_{k-2}
 \end{aligned}
 $$
