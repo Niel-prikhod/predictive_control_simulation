@@ -7,6 +7,7 @@ REQ			= requirements.txt
 PY			= $(VENV)/bin/python
 
 MAIN		= main.py
+ARGS		?= 
 
 $(VENV)/bin/activate: $(REQ)
 	$(PYTHON_SYS) -m venv $(VENV)
@@ -18,13 +19,16 @@ venv: $(VENV)/bin/activate
 install: venv
 
 run-pid: venv
-	$(PY) $(MAIN) "pid"
+	$(PY) $(MAIN) "pid" $(ARGS)
 
 run-pole: venv
-	$(PY) $(MAIN) "pole"
+	$(PY) $(MAIN) "pole" $(ARGS)
 
 run-gpc: venv
-	$(PY) $(MAIN) "gpc"
+	$(PY) $(MAIN) "gpc" $(ARGS)
+
+run-open: venv
+	$(PY) $(MAIN) "null" $(ARGS)
 
 clean:
 	rm -rf $(VENV)
