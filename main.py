@@ -26,16 +26,16 @@ def main():
     plant = signal.TransferFunction(Ys, Us)
     t_open, step_resp = signal.step(plant, T=t)
     regulator = 0
+    plant_dis = signal.cont2discrete(
+        (plant.num, plant.den), dt, method='zoh')
+    num_d = plant_dis[0].flatten()
+    den_d = plant_dis[1].flatten()
     if args.controller == "pid":
         r0 = 2.2414
         Ti = 11.5
         Td = 2.875
         regulator = PID(r0, dt, Ti, Td)
     elif args.controller == "pole":
-        plant_dis = signal.cont2discrete(
-            (plant.num, plant.den), dt, method='zoh')
-        num_d = plant_dis[0].flatten()
-        den_d = plant_dis[1].flatten()
         pole_const = - 0.5
         third_pole = - 3.0
         controller_p = [pole_const + pole_const *
@@ -43,13 +43,9 @@ def main():
         controller_p.append(third_pole)
         regulator = PolePlacementRegulator(den_d, num_d, controller_p, dt)
     elif args.controller == "gpc":
-        plant_dis = signal.cont2discrete(
-            (plant.num, plant.den), dt, method='zoh')
-        num_d = plant_dis[0].flatten()
-        den_d = plant_dis[1].flatten()
         regulator = GeneralPredictiveController(num_d, den_d, 10, 0.1)
 
-    out = sim.simulate_plant(plant, regulator, ref, t)
+    out = sim.simulate_plant(num_d, den_d, regulator, ref, t)
     sim.plot_responce(t, t_open, ref, step_resp, out)
 
 

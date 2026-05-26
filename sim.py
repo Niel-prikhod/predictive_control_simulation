@@ -1,16 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import signal
 
 
-def simulate_plant(plant_cont, regulator, reference, t):
+def simulate_plant(num_discrete, den_discrete, regulator, reference, t):
     """Discretise plant and run closed-loop simulation."""
-    plant_discrete = signal.cont2discrete(
-        (plant_cont.num, plant_cont.den), t[1] - t[0], method='zoh'
-    )
-    num_discrete = plant_discrete[0].flatten()
-    den_discrete = plant_discrete[1].flatten()
-
     out = np.zeros_like(t)
     control = np.zeros_like(t)
 
