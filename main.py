@@ -4,12 +4,13 @@ import numpy as np
 from pid import PID
 import sim
 from ppc import PolePlacementRegulator
+from gpc import GeneralPredictiveController
 
 
 def argument_parser():
     """Parse CLI controller choice."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("controller", choices=["pid", "pole", "mpc"])
+    parser.add_argument("controller", choices=["pid", "pole", "gpc"])
     args = parser.parse_args()
     return args
 
@@ -41,6 +42,13 @@ def main():
                         1j, pole_const - pole_const * 1j]
         controller_p.append(third_pole)
         regulator = PolePlacementRegulator(den_d, num_d, controller_p, dt)
+    elif args.controller == "gpc":
+        plant_dis = signal.cont2discrete(
+            (plant.num, plant.den), dt, method='zoh')
+        num_d = plant_dis[0].flatten()
+        den_d = plant_dis[1].flatten()
+        regulator = GeneralPredictiveController(num_d, den_d, 10, 0.1)
+
     out = sim.simulate_plant(plant, regulator, ref, t)
     sim.plot_responce(t, t_open, ref, step_resp, out)
 

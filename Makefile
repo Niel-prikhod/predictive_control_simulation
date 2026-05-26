@@ -23,6 +23,9 @@ run-pid: venv
 run-pole: venv
 	$(PY) $(MAIN) "pole"
 
+run-gpc: venv
+	$(PY) $(MAIN) "gpc"
+
 clean:
 	rm -rf $(VENV)
 	find . -name "__pycache__" -exec rm -rf {} + 
