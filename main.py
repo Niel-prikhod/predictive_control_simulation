@@ -48,7 +48,7 @@ def main():
         controller_p.append(third_pole)
         regulator = PolePlacementRegulator(den_d, num_d, controller_p, dt)
     elif args.controller == "gpc":
-        regulator = GeneralPredictiveController(num_d, den_d, 10, 0.1)
+        regulator = GeneralPredictiveController(num_d, den_d, 10, 0.6)
     else:
         t_open, step_resp = signal.step(plant, T=t)
         sim.plot_responce(t_open, step_resp, ref, mode,
