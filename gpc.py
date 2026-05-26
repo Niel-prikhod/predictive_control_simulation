@@ -3,6 +3,11 @@ import numpy as np
 
 class GeneralPredictiveController:
     def __init__(self, num, den, horizon, penalty):
+        """
+        num, den: discrete plant;
+        horizon: prediction horizon;
+        penalty: control weight.
+        """
         self.horizon = horizon
         self.penalty = penalty
         aug_num = np.convolve(den, [1, -1])
@@ -49,6 +54,7 @@ class GeneralPredictiveController:
         self.prev_control = 0.0
 
     def regulate(self, out, ref):
+        """Compute control u_k using receding-horizon GPC law."""
         self.out_hist = np.roll(self.out_hist, 1)
         self.out_hist[0] = out
         free_resp = self.in_resp @ self.in_hist + self.out_resp @ self.out_hist

@@ -4,16 +4,20 @@ Learning implementation of classic and predictive control algorithms.
 
 ## Program Flow
 
-1. `argument_parser()` selects controller via CLI (`pid` / `pole` / `mpc`)
-2. `main()` constructs a continuous plant $H(s) = \frac{1.5}{5s^2 + 5s + 1}$ and instantiates the regulator
-3. `simulate_plant()` discretises the plant (ZOH), iterates the difference equation, and calls `regulator.regulate()` at each step
-4. `plot_responce()` shows open-loop and closed-loop step responses side-by-side
+1. `argument_parser()` selects controller via CLI (`null` / `pid` / `pole` / `gpc`)
+2. `main()` constructs a continuous plant $H(s) = \frac{1.5}{5s^2 + 5s + 1}$, discretises it (ZOH), and instantiates the regulator
+3. `simulate_plant()` iterates the difference equation, calling `regulator.regulate()` at each step
+4. `plot_responce()` saves or shows the step response for the tested controller or open-loop
 
 ## Implemented Controllers
 
+### Open-Loop (`null`)
+
+No controller; just the plant step response. Used as a baseline.
+
 ### PID (`pid.py`)
 
-Velocity (incremental) form of a discrete PID. Control law:
+Velocity (incremental) form of a discrete PID:
 
 $$
 \begin{aligned}
@@ -34,7 +38,7 @@ $$
 
 - $A(z)$, $B(z)$ — plant denominator and numerator
 - $D(z)$ — desired closed-loop polynomial (mapped from continuous poles $s_i \to e^{s_i T}$)
-- $P(z)$, $Q(z)$ — unknown controller polynomials solved via $\text{lstsq}$
+- $P(z)$, $Q(z)$ — unknown controller polynomials solved via least-squares
 
 Control law (RST structure):
 
@@ -44,26 +48,67 @@ $$
 
 where $R = D(1) / B(1)$ ensures zero steady-state error.
 
-## Planned
+### GPC (`gpc.py`)
 
-- **GPC** — Generalized Predictive Control (unconstrained).
-- **GPC with constraints** — GPC with input/output constraints.
+Unconstrained Generalized Predictive Controller using the model in deviation form.
+
+The plant model is augmented with an integrator:
+
+$$
+\tilde{A}(z) = A(z)(1 - z^{-1})
+$$
+
+Prediction over horizon $N$:
+
+$$
+\mathbf{y} = G \, \Delta\mathbf{u} + \mathbf{f}
+$$
+
+- $G$ — lower-triangular step-response matrix ($G = \tilde{A}^{-1} B$)
+- $\mathbf{f}$ — free response (predicted from past inputs/outputs)
+
+Quadratic cost:
+
+$$
+J = (\mathbf{w} - \mathbf{y})^T (\mathbf{w} - \mathbf{y}) + \lambda \, \Delta\mathbf{u}^T \Delta\mathbf{u}
+$$
+
+Unconstrained minimum:
+
+$$
+\Delta\mathbf{u} = (G^T G + \lambda I)^{-1} G^T (\mathbf{w} - \mathbf{f})
+$$
+
+Only the first increment $\Delta u_k$ is applied (receding horizon).
+
+## Simulation Results
+
+| Controller | Closed-Loop Step Response |
+|:----------:|:-------------------------:|
+| Open-loop (no control) | ![null](docs/null_response.png) |
+| PID | ![pid](docs/pid_response.png) |
+| Pole-Placement | ![pole](docs/pole_response.png) |
+| GPC | ![gpc](docs/gpc_response.png) |
 
 ## Usage
 
 ```bash
-make run-pid
-make run-pole
+make run-pid      # PID
+make run-pole     # Pole-placement
+make run-gpc      # GPC
+# to save plot to .png:
+make run-{controller} ARGS="--mode=save"
 ```
 
 Or manually:
 
 ```bash
 python main.py pid
-python main.py pole
+python main.py gpc --mode save
+python main.py null
 ```
 
-The tested plant is a second-order system $1.5 / (5s^2 + 5s + 1)$. Each command plots the open-loop and closed-loop step response.
+The plant is $1.5 / (5s^2 + 5s + 1)$ with $T_s = 1$ s.
 
 ## Dependencies
 
