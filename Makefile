@@ -27,6 +27,9 @@ run-pole: venv
 run-gpc: venv
 	$(PY) $(MAIN) "gpc" $(ARGS)
 
+run-gpc-con: venv
+	$(PY) $(MAIN) "gpc-constrained" $(ARGS)
+
 run-open: venv
 	$(PY) $(MAIN) "null" $(ARGS)
 
