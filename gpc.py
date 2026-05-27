@@ -43,20 +43,27 @@ class GeneralPredictiveController:
                     mat_A[i, j] = a_poly[idx]
         return mat_A
 
-    def _init_constrained(self, mat_G, constraints):
-        self.type = 'n'
-        self.hessian = mat_G.T @ mat_G + self.penalty * np.eye(self.horizon)
-        self.control_min, self.control_max = constraints
-        self.sum_mat = np.tril(np.ones((self.horizon, self.horizon)))
-        self.constr_mat = np.vstack([self.sum_mat, -self.sum_mat])
-        self.control_gain = mat_G
-
     def _init_unconstrained(self, mat_g):
         self.type = 'a'
         id_mat = np.eye(self.horizon)
         gain_mat = (np.linalg.inv(
             mat_g.T @ mat_g + self.penalty * id_mat) @ mat_g.T)
         self.control_gain = gain_mat[0, :]
+
+    def _init_constrained(self, mat_G, constraints):
+        if not isinstance(constraints, tuple) or len(constraints) != 2:
+            raise TypeError("u_bounds must be a tuple or list of (min, max)")
+        self.control_min = constraints[0]
+        self.control_max = constraints[1]
+        if self.control_min >= self.control_max:
+            raise ValueError(f"Inconsistent bounds: minimal value ({
+                self.control_min}) must be less than maximal value ({
+                self.control_max})")
+        self.type = 'n'
+        self.hessian = mat_G.T @ mat_G + self.penalty * np.eye(self.horizon)
+        sum_mat = np.tril(np.ones((self.horizon, self.horizon)))
+        self.constr_mat = np.vstack([sum_mat, -sum_mat])
+        self.control_gain = mat_G
 
     def _init_free_response(self, mat_A, mat_B, a_poly, b_poly, m, n):
         tilde_A = np.zeros((self.horizon, m))
@@ -80,8 +87,8 @@ class GeneralPredictiveController:
 
     def _hildreth_desop(self, lin_term, constraints, max_iter=100, tol=1e-6):
         hess_inv = np.linalg.inv(self.hessian)
-        mat_g = 0.25 * self.sum_mat @ hess_inv @ self.sum_mat.T
-        vec_h = 0.5 * self.sum_mat @ hess_inv @ lin_term + constraints
+        mat_g = 0.25 * self.constr_mat @ hess_inv @ self.constr_mat.T
+        vec_h = 0.5 * self.constr_mat @ hess_inv @ lin_term + constraints
         constr_len = len(constraints)
         dual_vec = np.zeros(constr_len)
         for _ in range(max_iter):
@@ -92,7 +99,9 @@ class GeneralPredictiveController:
                 dual_vec[i] = max(0, next_elem)
             if np.linalg.norm((dual_vec - dual_prev) < tol):
                 break
-        return (-0.5 * hess_inv @ (self.sum_mat.T @ dual_vec + lin_term))
+        control_vec = (-0.5 * hess_inv @
+                       (self.constr_mat.T @ dual_vec + lin_term))
+        return control_vec[0]
 
     def regulate(self, out, ref):
         """Compute control u_k using receding-horizon GPC law."""

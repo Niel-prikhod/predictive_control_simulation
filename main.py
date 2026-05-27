@@ -11,7 +11,8 @@ import os
 def argument_parser():
     """Parse CLI controller choice."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("controller", choices=["null", "pid", "pole", "gpc"])
+    parser.add_argument("controller", choices=[
+                        "null", "pid", "pole", "gpc", "gpc-constrained"])
     parser.add_argument("--mode", choices=["save", "show"], default="show")
     args = parser.parse_args()
     return args
@@ -49,6 +50,14 @@ def main():
         regulator = PolePlacementRegulator(den_d, num_d, controller_p, dt)
     elif args.controller == "gpc":
         regulator = GeneralPredictiveController(num_d, den_d, 10, 0.6)
+    elif args.controller == "gpc-constrained":
+        try:
+            regulator = GeneralPredictiveController(
+                num_d, den_d, 10, 0.6, (0, 10))
+        except (TypeError or ValueError) as err:
+            msg = str(err)
+            print(f"error:\n{msg}")
+            return
     else:
         t_open, step_resp = signal.step(plant, T=t)
         sim.plot_responce(t_open, step_resp, ref, mode,
