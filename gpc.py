@@ -12,26 +12,56 @@ class GeneralPredictiveController:
         self.penalty = penalty
         aug_num = np.convolve(den, [1, -1])
         a_poly = aug_num[1:]
-        mat_A = np.eye(horizon)
-        for i in range(1, horizon):
-            for j in range(i):
-                idx = i - j - 1
-                if idx < len(a_poly):
-                    mat_A[i, j] = a_poly[idx]
-
+        mat_A = self._init_mat_a(a_poly)
         b_poly = np.array(num)
-        mat_B = np.zeros((horizon, horizon))
-        for i in range(horizon):
+        mat_B = self._init_mat_b(b_poly)
+        m = len(a_poly)
+        n = len(b_poly)
+        mat_G = np.linalg.solve(mat_A, mat_B)
+        if constraints is None:
+            self._init_unconstrained(mat_G)
+        else:
+            self._init_constrained(mat_G, constraints)
+        self._init_free_response(mat_A, mat_B, a_poly, b_poly, m, n)
+        self._init_history(m, n)
+
+    def _init_mat_b(self, b_poly):
+        mat_B = np.zeros((self.horizon, self.horizon))
+        for i in range(self.horizon):
             for j in range(i + 1):
                 idx = i - j
                 if idx < len(b_poly):
                     mat_B[i, j] = b_poly[idx]
+        return mat_B
 
-        m = len(a_poly)
-        n = len(b_poly)
-        tilde_A = np.zeros((horizon, m))
-        tilde_B = np.zeros((horizon, n - 1))
-        for i in range(horizon):
+    def _init_mat_a(self, a_poly):
+        mat_A = np.eye(self.horizon)
+        for i in range(1, self.horizon):
+            for j in range(i):
+                idx = i - j - 1
+                if idx < len(a_poly):
+                    mat_A[i, j] = a_poly[idx]
+        return mat_A
+
+    def _init_constrained(self, mat_G, constraints):
+        self.type = 'n'
+        self.hessian = mat_G.T @ mat_G + self.penalty * np.eye(self.horizon)
+        self.control_min, self.control_max = constraints
+        self.sum_mat = np.tril(np.ones((self.horizon, self.horizon)))
+        self.constr_mat = np.vstack([self.sum_mat, -self.sum_mat])
+        self.control_gain = mat_G
+
+    def _init_unconstrained(self, mat_g):
+        self.type = 'a'
+        id_mat = np.eye(self.horizon)
+        gain_mat = (np.linalg.inv(
+            mat_g.T @ mat_g + self.penalty * id_mat) @ mat_g.T)
+        self.control_gain = gain_mat[0, :]
+
+    def _init_free_response(self, mat_A, mat_B, a_poly, b_poly, m, n):
+        tilde_A = np.zeros((self.horizon, m))
+        tilde_B = np.zeros((self.horizon, n - 1))
+        for i in range(self.horizon):
             for j in range(m):
                 idx = i + j
                 if idx < m:
@@ -40,24 +70,10 @@ class GeneralPredictiveController:
                 idx = i + j + 1
                 if idx < n:
                     tilde_B[i, j] = b_poly[idx]
-
-        mat_G = np.linalg.solve(mat_A, mat_B)
-        if constraints is None:
-            self.type = 'a'
-            id_mat = np.eye(horizon)
-            gain_mat = (np.linalg.inv(
-                mat_G.T @ mat_G + penalty * id_mat) @ mat_G.T)
-            self.control_gain = gain_mat[0, :]
-        else:
-            self.type = 'n'
-            self.hessian = mat_G.T @ mat_G + penalty * np.eye(horizon)
-            self.control_min, self.control_max = constraints
-            self.sum_mat = np.tril(np.ones((horizon, horizon)))
-            self.constr_mat = np.vstack([self.sum_mat, -self.sum_mat])
-            self.control_gain = mat_G
         self.in_resp = np.linalg.solve(mat_A, tilde_B)
         self.out_resp = np.linalg.solve(mat_A, tilde_A)
 
+    def _init_history(self, m, n):
         self.out_hist = np.zeros(m)
         self.in_hist = np.zeros(n - 1)
         self.prev_control = 0.0
