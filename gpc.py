@@ -53,6 +53,23 @@ class GeneralPredictiveController:
         self.in_hist = np.zeros(n - 1)
         self.prev_control = 0.0
 
+    def _hildreth_desop(hessian, lin_term, ineq_coef, constraints,
+                        max_iter=100, tol=1e-6):
+        hess_inv = np.linalg.inv(hessian)
+        mat_g = 0.25 * ineq_coef @ hess_inv @ ineq_coef.T
+        vec_h = 0.5 * ineq_coef @ hess_inv @ lin_term + constraints
+        constr_len = len(constraints)
+        dual_vec = np.zeros(constr_len)
+        for _ in range(max_iter):
+            dual_prev = dual_vec.copy()
+            for i in range(constr_len):
+                sum = mat_g[i, :] @ dual_vec - mat_g[i, i] * dual_vec[i]
+                next_elem = -(1.0 / mat_g[i, i]) * (sum + 0.5 * vec_h[i])
+                dual_vec[i] = max(0, next_elem)
+            if np.linalg.norm((dual_vec - dual_prev) < tol):
+                break
+        return (-0.5 * hess_inv @ (ineq_coef.T @ dual_vec + lin_term))
+
     def regulate(self, out, ref):
         """Compute control u_k using receding-horizon GPC law."""
         self.out_hist = np.roll(self.out_hist, 1)
