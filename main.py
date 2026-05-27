@@ -60,12 +60,12 @@ def main():
             return
     else:
         t_open, step_resp = signal.step(plant, T=t)
-        sim.plot_responce(t_open, step_resp, ref, mode,
+        sim.plot_response(t_open, step_resp, ref, mode,
                           args.controller, outdir)
         return
 
     out = sim.simulate_plant(num_d, den_d, regulator, ref, t)
-    sim.plot_responce(t, out, ref, mode, args.controller, outdir)
+    sim.plot_response(t, out, ref, mode, args.controller, outdir)
 
 
 if __name__ == "__main__":

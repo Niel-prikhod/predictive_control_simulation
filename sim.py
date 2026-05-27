@@ -15,7 +15,7 @@ def simulate_plant(num_discrete, den_discrete, regulator, reference, t):
     return out
 
 
-def plot_responce(t, out, ref, save, controller, out_folder):
+def plot_response(t, out, ref, save, controller, out_folder):
     """Plot open-loop and closed-loop step responses side-by-side."""
     filename = f"{controller}_response.png"
     filepath = os.path.join(out_folder, filename)

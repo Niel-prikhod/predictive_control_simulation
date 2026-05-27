@@ -112,7 +112,7 @@ where $M = \frac{1}{4} C H^{-1} C^T$ and $\mathbf{h} = \frac{1}{2} C H^{-1} \mat
 | PID | ![pid](docs/pid_response.png) |
 | Pole-Placement | ![pole](docs/pole_response.png) |
 | GPC (unconstrained) | ![gpc](docs/gpc_response.png) |
-| GPC (constrained) | ![gpc](docs/gpc_constrained_response.png) |
+| GPC (constrained) | ![gpc](docs/gpc-constrained_response.png) |
 
 ## Usage
 
