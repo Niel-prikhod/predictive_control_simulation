@@ -4,7 +4,7 @@ Learning implementation of classic and predictive control algorithms.
 
 ## Program Flow
 
-1. `argument_parser()` selects controller via CLI (`null` / `pid` / `pole` / `gpc`)
+1. `argument_parser()` selects controller via CLI (`null` / `pid` / `pole` / `gpc` / `gpc-constrained`)
 2. `main()` constructs a continuous plant $H(s) = \frac{1.5}{5s^2 + 5s + 1}$, discretises it (ZOH), and instantiates the regulator
 3. `simulate_plant()` iterates the difference equation, calling `regulator.regulate()` at each step
 4. `plot_responce()` saves or shows the step response for the tested controller or open-loop
@@ -50,7 +50,7 @@ where $R = D(1) / B(1)$ ensures zero steady-state error.
 
 ### GPC (`gpc.py`)
 
-Unconstrained Generalized Predictive Controller using the model in deviation form.
+Generalized Predictive Controller using the CARIMA model.
 
 The plant model is augmented with an integrator:
 
@@ -73,13 +73,36 @@ $$
 J = (\mathbf{w} - \mathbf{y})^T (\mathbf{w} - \mathbf{y}) + \lambda \, \Delta\mathbf{u}^T \Delta\mathbf{u}
 $$
 
-Unconstrained minimum:
+#### Unconstrained
+
+Closed-form analytical solution:
 
 $$
 \Delta\mathbf{u} = (G^T G + \lambda I)^{-1} G^T (\mathbf{w} - \mathbf{f})
 $$
 
 Only the first increment $\Delta u_k$ is applied (receding horizon).
+
+#### With Constraints
+
+Input constraints $u_{\min} \le u_k \le u_{\max}$ are handled by reformulating as a quadratic program (QP) over $\Delta\mathbf{u}$:
+
+$$
+\begin{aligned}
+\min_{\Delta\mathbf{u}} \quad & \frac{1}{2} \Delta\mathbf{u}^T H \Delta\mathbf{u} + \mathbf{c}^T \Delta\mathbf{u} \\
+\text{s.t.} \quad & \begin{bmatrix} T_l \\ -T_l \end{bmatrix} \Delta\mathbf{u} \le \begin{bmatrix} \mathbf{u}_{\max} - u_{k-1} \\ \mathbf{u}_{k-1} - \mathbf{u}_{\min} \end{bmatrix}
+\end{aligned}
+$$
+
+where $H = G^T G + \lambda I$, $\mathbf{c} = -G^T(\mathbf{w} - \mathbf{f})$, and $T_l$ is the lower-triangular sum matrix.
+
+The QP is solved via **Hildreth's algorithm** — an iterative row-action method that updates dual variables and clips them at zero, recovering the primal solution from the dual:
+
+$$
+d_i^{(t+1)} = \max\!\left(0,\, -\frac{1}{M_{ii}}\Big(\sum_{j} M_{ij} d_j^{(t)} - M_{ii} d_i^{(t)} + \frac{1}{2} h_i\Big)\right)
+$$
+
+where $M = \frac{1}{4} C H^{-1} C^T$ and $\mathbf{h} = \frac{1}{2} C H^{-1} \mathbf{c} + \mathbf{b}$.
 
 ## Simulation Results
 
@@ -88,14 +111,18 @@ Only the first increment $\Delta u_k$ is applied (receding horizon).
 | Open-loop (no control) | ![null](docs/null_response.png) |
 | PID | ![pid](docs/pid_response.png) |
 | Pole-Placement | ![pole](docs/pole_response.png) |
-| GPC | ![gpc](docs/gpc_response.png) |
+| GPC (unconstrained) | ![gpc](docs/gpc_response.png) |
+| GPC (constrained) | ![gpc](docs/gpc_constrained_response.png) |
 
 ## Usage
 
 ```bash
-make run-pid      # PID
-make run-pole     # Pole-placement
-make run-gpc      # GPC
+make run-pid          # PID
+make run-pole         # Pole-placement
+make run-gpc          # GPC (unconstrained)
+make run-gpc-con      # GPC with input constraints [0, 10]
+make run-open         # Open-loop (null)
+
 # to save plot to .png:
 make run-{controller} ARGS="--mode=save"
 ```
@@ -104,7 +131,8 @@ Or manually:
 
 ```bash
 python main.py pid
-python main.py gpc --mode save
+python main.py gpc
+python main.py gpc-constrained --mode save
 python main.py null
 ```
 

@@ -9,9 +9,8 @@ class PolePlacementRegulator:
 
     def __init__(self, A_poly, B_poly, poles, dt):
         """
-        A_d, B_d, C_d: discrete state-space matrices
-        controller_poles: list of desired controller eigenvalues
-        observer_poles: list of desired observer eigenvalues
+        A_poly: denominator coeffs; B_poly: numerator coeffs;
+        poles: desired continuous closed-loop poles; dt: sample time.
         """
         self.dt = dt
         n = len(A_poly) - 1

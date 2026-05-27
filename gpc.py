@@ -26,6 +26,7 @@ class GeneralPredictiveController:
         self._init_history(m, n)
 
     def _init_mat_b(self, b_poly):
+        """Build lower-triangular B matrix for prediction."""
         mat_B = np.zeros((self.horizon, self.horizon))
         for i in range(self.horizon):
             for j in range(i + 1):
@@ -35,6 +36,7 @@ class GeneralPredictiveController:
         return mat_B
 
     def _init_mat_a(self, a_poly):
+        """Build lower-triangular A matrix for prediction."""
         mat_A = np.eye(self.horizon)
         for i in range(1, self.horizon):
             for j in range(i):
@@ -44,6 +46,7 @@ class GeneralPredictiveController:
         return mat_A
 
     def _init_unconstrained(self, mat_g):
+        """Compute analytical control gain for unconstrained GPC."""
         self.type = 'a'
         id_mat = np.eye(self.horizon)
         gain_mat = (np.linalg.inv(
@@ -51,6 +54,7 @@ class GeneralPredictiveController:
         self.control_gain = gain_mat[0, :]
 
     def _init_constrained(self, mat_G, constraints):
+        """Set up Hessian and constraint matrix for QP solver."""
         if not isinstance(constraints, tuple) or len(constraints) != 2:
             raise TypeError("u_bounds must be a tuple or list of (min, max)")
         self.control_min = constraints[0]
@@ -66,6 +70,7 @@ class GeneralPredictiveController:
         self.control_gain = mat_G
 
     def _init_free_response(self, mat_A, mat_B, a_poly, b_poly, m, n):
+        """Precompute free-response contribution matrices."""
         tilde_A = np.zeros((self.horizon, m))
         tilde_B = np.zeros((self.horizon, n - 1))
         for i in range(self.horizon):
@@ -81,11 +86,13 @@ class GeneralPredictiveController:
         self.out_resp = np.linalg.solve(mat_A, tilde_A)
 
     def _init_history(self, m, n):
+        """Initialise input/output history buffers."""
         self.out_hist = np.zeros(m)
         self.in_hist = np.zeros(n - 1)
         self.prev_control = 0.0
 
     def _hildreth_desop(self, lin_term, constraints, max_iter=100, tol=1e-6):
+        """Solve QP via Hildreth's algorithm; return first control increment."""
         hess_inv = np.linalg.inv(self.hessian)
         mat_g = 0.25 * self.constr_mat @ hess_inv @ self.constr_mat.T
         vec_h = 0.5 * self.constr_mat @ hess_inv @ lin_term + constraints
