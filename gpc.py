@@ -2,7 +2,7 @@ import numpy as np
 
 
 class GeneralPredictiveController:
-    def __init__(self, num, den, horizon, penalty):
+    def __init__(self, num, den, horizon, penalty, constraints=None):
         """
         num, den: discrete plant;
         horizon: prediction horizon;
@@ -42,10 +42,19 @@ class GeneralPredictiveController:
                     tilde_B[i, j] = b_poly[idx]
 
         mat_G = np.linalg.solve(mat_A, mat_B)
-        id_mat = np.eye(horizon)
-        gain_mat = (np.linalg.inv(
-            mat_G.T @ mat_G + penalty * id_mat) @ mat_G.T)
-        self.control_gain = gain_mat[0, :]
+        if constraints is None:
+            self.type = 'a'
+            id_mat = np.eye(horizon)
+            gain_mat = (np.linalg.inv(
+                mat_G.T @ mat_G + penalty * id_mat) @ mat_G.T)
+            self.control_gain = gain_mat[0, :]
+        else:
+            self.type = 'n'
+            self.hessian = mat_G.T @ mat_G + penalty * np.eye(horizon)
+            self.control_min, self.control_max = constraints
+            self.sum_mat = np.tril(np.ones((horizon, horizon)))
+            self.constr_mat = np.vstack([self.sum_mat, -self.sum_mat])
+            self.control_gain = mat_G
         self.in_resp = np.linalg.solve(mat_A, tilde_B)
         self.out_resp = np.linalg.solve(mat_A, tilde_A)
 
@@ -53,11 +62,10 @@ class GeneralPredictiveController:
         self.in_hist = np.zeros(n - 1)
         self.prev_control = 0.0
 
-    def _hildreth_desop(hessian, lin_term, ineq_coef, constraints,
-                        max_iter=100, tol=1e-6):
-        hess_inv = np.linalg.inv(hessian)
-        mat_g = 0.25 * ineq_coef @ hess_inv @ ineq_coef.T
-        vec_h = 0.5 * ineq_coef @ hess_inv @ lin_term + constraints
+    def _hildreth_desop(self, lin_term, constraints, max_iter=100, tol=1e-6):
+        hess_inv = np.linalg.inv(self.hessian)
+        mat_g = 0.25 * self.sum_mat @ hess_inv @ self.sum_mat.T
+        vec_h = 0.5 * self.sum_mat @ hess_inv @ lin_term + constraints
         constr_len = len(constraints)
         dual_vec = np.zeros(constr_len)
         for _ in range(max_iter):
@@ -68,7 +76,7 @@ class GeneralPredictiveController:
                 dual_vec[i] = max(0, next_elem)
             if np.linalg.norm((dual_vec - dual_prev) < tol):
                 break
-        return (-0.5 * hess_inv @ (ineq_coef.T @ dual_vec + lin_term))
+        return (-0.5 * hess_inv @ (self.sum_mat.T @ dual_vec + lin_term))
 
     def regulate(self, out, ref):
         """Compute control u_k using receding-horizon GPC law."""
@@ -76,7 +84,16 @@ class GeneralPredictiveController:
         self.out_hist[0] = out
         free_resp = self.in_resp @ self.in_hist + self.out_resp @ self.out_hist
         ref_vec = np.full(self.horizon, ref)
-        control_incr = self.control_gain @ (ref_vec - free_resp)
+        if self.type == 'a':
+            control_incr = self.control_gain @ (ref_vec - free_resp)
+        else:
+            max_incr = np.full(
+                self.horizon, self.control_max - self.prev_control)
+            min_incr = np.full(
+                self.horizon, self.prev_control - self.control_min)
+            constraints = np.hstack([min_incr, max_incr])
+            lin_term = - self.control_gain.T @ (ref_vec - free_resp)
+            control_incr = self._hildreth_desop(lin_term, constraints)
         self.in_hist = np.roll(self.in_hist, 1)
         self.in_hist[0] = control_incr
         self.prev_control += control_incr
